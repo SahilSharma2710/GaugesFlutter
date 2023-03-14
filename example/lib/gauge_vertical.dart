@@ -34,9 +34,9 @@ class _MyVerticalGaugeState extends State<MyVerticalGauge> {
               color: Colors.orange,
             ),
           ],
-          gaugeOrientation: GaugeOrientation.horizontal,
+          gaugeOrientation: GaugeOrientation.vertical,
           rulers: const RulerStyle(
-            rulerPosition: RulerPosition.bottom,
+            rulerPosition: RulerPosition.right,
           ),
         ),
       ),

@@ -452,6 +452,7 @@ class RenderLinearGauge extends RenderBox {
 
   late Size _startLabelSize, _endLabelSize;
 
+  late double _gaugeThickness;
   double _valueInPixel = 0;
 
   void _calculateRulerPoints() {
@@ -963,6 +964,27 @@ class RenderLinearGauge extends RenderBox {
     _linearGaugeContainerPaint.color = getLinearGaugeContainerBgColor;
   }
 
+  void _calculateGaugeThickness() {
+    Size longestLabel = _linearGaugeLabel.getLabelSize(
+        textStyle: getTextStyle,
+        value: !getInversedRulers ? getEnd.toString() : getStart.toString());
+    if (getGaugeOrientation == GaugeOrientation.horizontal) {
+      _gaugeThickness = getLinearGaugeBoxDecoration.height +
+          getPrimaryRulersHeight +
+          getRulersOffset +
+          getLabelOffset +
+          longestLabel.height -
+          3;
+    } else {
+      _gaugeThickness = getLinearGaugeBoxDecoration.width +
+          getPrimaryRulersHeight +
+          getRulersOffset +
+          getLabelOffset +
+          longestLabel.width -
+          3;
+    }
+  }
+
   @override
   void performLayout() {
     size = computeDryLayout(constraints);
@@ -985,10 +1007,20 @@ class RenderLinearGauge extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
+    _calculateGaugeThickness();
     Canvas canvas = context.canvas;
 
     canvas.save();
-    canvas.translate(offset.dx, offset.dy);
+
+    if (getGaugeOrientation == GaugeOrientation.horizontal &&
+        RulerPosition.top == rulerPosition) {
+      canvas.translate(offset.dx, _gaugeThickness);
+    } else if (getGaugeOrientation == GaugeOrientation.vertical &&
+        RulerPosition.left == rulerPosition) {
+      canvas.translate(_gaugeThickness, offset.dy);
+    } else {
+      canvas.translate(offset.dx, offset.dy);
+    }
     _setLinearGaugeContainerPaint();
     _setSecondaryRulersPaint();
 
