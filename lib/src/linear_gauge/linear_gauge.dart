@@ -598,25 +598,13 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
 
   List<Widget> _buildChildWidgets(BuildContext context) {
     _linearGaugeWidgets.clear();
-    int i = 0;
     int j = 0;
 
     _linearGaugeWidgets.add(LinearGaugeContainer(
       linearGauge: widget,
       gaugeAnimation: _gaugeAnimation,
+      valueBarAnimation: _valueBarAnimations,
     ));
-
-    if (widget.valueBar != null && widget.valueBar!.isNotEmpty) {
-      for (final ValueBar valueBar in widget.valueBar!) {
-        if (valueBar.enableAnimation && valueBar.animationDuration > 0) {
-          _addChild(valueBar, _valueBarAnimations[i],
-              _valueBarAnimationControllers[i]);
-          i++;
-        } else {
-          _addChild(valueBar, null, null);
-        }
-      }
-    }
 
     if (widget.pointers != null && widget.pointers!.isNotEmpty) {
       for (final Pointer pointer in widget.pointers!) {

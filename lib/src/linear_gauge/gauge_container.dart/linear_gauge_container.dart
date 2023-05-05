@@ -11,12 +11,14 @@ class LinearGaugeContainer extends LeafRenderObjectWidget {
     Key? key,
     required this.linearGauge,
     this.gaugeAnimation,
+    this.valueBarAnimation,
 
     // required this.fadeAnimation,
   }) : super(key: key);
 
   final LinearGauge linearGauge;
   final Animation<double>? gaugeAnimation;
+  final List<Animation<double>>? valueBarAnimation;
 
   // final Animation<double>? fadeAnimation;
 
@@ -55,6 +57,8 @@ class LinearGaugeContainer extends LeafRenderObjectWidget {
         secondaryRulerPerInterval:
             linearGauge.rulers!.secondaryRulerPerInterval!,
         fillExtend: linearGauge.fillExtend,
+        valueBar: linearGauge.valueBar!,
+        valueBarAnimation: valueBarAnimation!,
         textStyle: linearGauge.rulers!.textStyle!);
   }
 
@@ -94,6 +98,8 @@ class LinearGaugeContainer extends LeafRenderObjectWidget {
       ..setCustomLabels = linearGauge.customLabels!
       ..setSecondaryRulerPerInterval =
           linearGauge.rulers!.secondaryRulerPerInterval!
+      ..setValueBar = linearGauge.valueBar!
+      ..setValueBarAnimation = valueBarAnimation!
       ..setTextStyle = linearGauge.rulers!.textStyle!;
   }
 }
@@ -125,7 +131,8 @@ class RenderLinearGaugeContainer extends RenderBox {
     required List<Pointer> pointers,
     required List<RangeLinearGauge> rangeLinearGauge,
     required bool fillExtend,
-    // required Animation<double>? gaugeAnimation,
+    required List<ValueBar> valueBar,
+    required List<Animation<double>> valueBarAnimation,
     required double thickness,
     required double borderRadius,
     required LinearEdgeStyle edgeStyle,
@@ -164,6 +171,8 @@ class RenderLinearGaugeContainer extends RenderBox {
         _bordeRadius = borderRadius,
         _fillExtend = fillExtend,
         _edgeStyle = edgeStyle,
+        _valueBar = valueBar,
+        _valueBarAnimation = valueBarAnimation,
         _textStyle = textStyle;
 
   late bool _isHorizontalOrientation;
@@ -526,15 +535,49 @@ class RenderLinearGaugeContainer extends RenderBox {
     markNeedsPaint();
   }
 
+  ///
+  /// Getter and Setter for the [valueBar] parameter.
+  ///
+  List<ValueBar> get getValueBar => _valueBar;
+  List<ValueBar> _valueBar = <ValueBar>[];
+  set setValueBar(List<ValueBar> val) {
+    if (_valueBar == val) return;
+    _valueBar = val;
+    markNeedsLayout();
+  }
+
+  ///
+  /// Getter and Setter for the [valueBarAnimation] parameter.
+  ///
+  List<Animation<double>> get getValueBarAnimation => _valueBarAnimation;
+  List<Animation<double>> _valueBarAnimation;
+  set setValueBarAnimation(List<Animation<double>> val) {
+    if (_valueBarAnimation == val) return;
+    _valueBarAnimation = val;
+    _removeAnimationListeners();
+    _addAnimationListener();
+    markNeedsLayout();
+  }
+
   void _addAnimationListener() {
     if (_gaugeAnimation != null) {
       _gaugeAnimation!.addListener(markNeedsPaint);
+    }
+    if (_valueBarAnimation.isNotEmpty) {
+      for (final Animation<double> animation in _valueBarAnimation) {
+        animation.addListener(markNeedsPaint);
+      }
     }
   }
 
   void _removeAnimationListeners() {
     if (_gaugeAnimation != null) {
       _gaugeAnimation!.removeListener(markNeedsPaint);
+    }
+    if (_valueBarAnimation.isNotEmpty) {
+      for (final Animation<double> animation in _valueBarAnimation) {
+        animation.removeListener(markNeedsPaint);
+      }
     }
   }
 
@@ -626,7 +669,6 @@ class RenderLinearGaugeContainer extends RenderBox {
         }
         interval = currentInterval;
       }
-
       _linearGaugeLabel.addLabels(
         distanceValueInRangeOfHundred: getSteps == 0.0 ? interval : getSteps,
         start: getStart,
@@ -735,6 +777,13 @@ class RenderLinearGaugeContainer extends RenderBox {
       }
     }
 
+    _drawValueBars(
+      canvas: canvas,
+      start: start,
+      totalWidth: totalWidth,
+      end: end,
+    );
+
     _drawRangeBars(
       start: start,
       end: end,
@@ -743,6 +792,27 @@ class RenderLinearGaugeContainer extends RenderBox {
       gaugeContainer: gaugeContainer,
       offset: offset,
     );
+  }
+
+  void _drawValueBars(
+      {required Canvas canvas,
+      required double start,
+      required double end,
+      required double totalWidth}) {
+    // For loop for drawing value bar in [LinearGauge]
+    for (int j = 0; j < getValueBar.length; j++) {
+      if (getValueBarAnimation[j].value <= 0) {
+        return;
+      }
+      getValueBar[j].drawValueBar(
+        canvas,
+        start,
+        end,
+        totalWidth,
+        j,
+        this,
+      );
+    }
   }
 
   void _drawRangeBars({
@@ -898,26 +968,27 @@ class RenderLinearGaugeContainer extends RenderBox {
 
   @override
   void performLayout() {
-    double parentWidgetSize;
+    _startLabelSize = _linearGaugeLabel.getLabelSize(
+        textStyle: getTextStyle,
+        value: !getInversedRulers
+            ? getCustomLabels!.isEmpty
+                ? getStart.toInt().toString()
+                : getCustomLabels!.first.text
+            : getCustomLabels!.isEmpty
+                ? getEnd.toInt().toString()
+                : getCustomLabels!.last.text);
 
-    final double actualParentWidth = constraints.maxWidth;
-    final double actualParentHeight = constraints.maxHeight;
+    _endLabelSize = _linearGaugeLabel.getLabelSize(
+        textStyle: getTextStyle,
+        value: !getInversedRulers
+            ? getCustomLabels!.isEmpty
+                ? getEnd.toInt().toString()
+                : getCustomLabels!.last.text
+            : getCustomLabels!.isEmpty
+                ? getStart.toInt().toString()
+                : getCustomLabels!.first.text);
 
-    if (_isHorizontalOrientation) {
-      parentWidgetSize = actualParentWidth;
-    } else {
-      parentWidgetSize = actualParentHeight;
-    }
-
-    final double gaugeContainerWidgetThickness = _measureGaugeContainerSize();
-
-    if (_isHorizontalOrientation) {
-      _axisActualSize = Size(parentWidgetSize, gaugeContainerWidgetThickness);
-    } else {
-      _axisActualSize = Size(gaugeContainerWidgetThickness, parentWidgetSize);
-    }
-
-    size = _axisActualSize;
+    size = Size(constraints.maxWidth, constraints.maxHeight);
   }
 
   void _drawPrimaryRulers(Canvas canvas, Offset offset) {
@@ -1054,7 +1125,7 @@ class RenderLinearGaugeContainer extends RenderBox {
 
     final ui.TextStyle labelTextStyle = ui.TextStyle(
       // color: getTextStyle.color,
-      color: getRangeColor(text),
+      color: setAnimatedColor(getRangeColor(text)),
       fontSize: getTextStyle.fontSize,
       background: getTextStyle.background,
       decoration: getTextStyle.decoration,
@@ -1162,41 +1233,6 @@ class RenderLinearGaugeContainer extends RenderBox {
       paragraph,
       labelPosition,
     );
-  }
-
-  _measureGaugeContainerSize() {
-    _startLabelSize = _linearGaugeLabel.getLabelSize(
-        textStyle: getTextStyle,
-        value: !getInversedRulers
-            ? getCustomLabels!.isEmpty
-                ? getStart.toInt().toString()
-                : getCustomLabels!.first.text
-            : getCustomLabels!.isEmpty
-                ? getEnd.toInt().toString()
-                : getCustomLabels!.last.text);
-
-    _endLabelSize = _linearGaugeLabel.getLabelSize(
-        textStyle: getTextStyle,
-        value: !getInversedRulers
-            ? getCustomLabels!.isEmpty
-                ? getEnd.toInt().toString()
-                : getCustomLabels!.last.text
-            : getCustomLabels!.isEmpty
-                ? getStart.toInt().toString()
-                : getCustomLabels!.first.text);
-    double effectiveLabelThickness = _isHorizontalOrientation
-        ? _startLabelSize.height
-        : _startLabelSize.width;
-    _effectiveRulerHeight = math.max(
-        getPrimaryRulersHeight + getLabelOffset + effectiveLabelThickness,
-        getSecondaryRulersHeight);
-    if (rulerPosition == RulerPosition.center) {
-      return (getThickness >= _effectiveRulerHeight)
-          ? getThickness - _effectiveRulerHeight
-          : _effectiveRulerHeight - getThickness;
-    }
-
-    return _effectiveRulerHeight + getThickness + getRulersOffset;
   }
 
   @override
