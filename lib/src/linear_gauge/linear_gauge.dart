@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'package:geekyants_flutter_gauges/src/linear_gauge/gauge_container.dart/linear_gauge_container.dart';
+import 'package:geekyants_flutter_gauges/src/linear_gauge/pointers/linear_gauge_shape_pointer_painter.dart';
 import 'linear_gauge_painter.dart';
 
 /// Creates a LinearGauge Widget to display the values in a linear scale. The
@@ -607,7 +608,7 @@ class _LinearGauge extends State<LinearGauge> with TickerProviderStateMixin {
     ));
 
     if (widget.pointers != null && widget.pointers!.isNotEmpty) {
-      for (final Pointer pointer in widget.pointers!) {
+      for (final dynamic pointer in widget.pointers!) {
         if (pointer.enableAnimation && pointer.animationDuration > 0) {
           _addChild(
               pointer, _pointerAnimations[j], _pointerAnimationControllers[j]);
@@ -725,5 +726,26 @@ class _RLinearGauge extends MultiChildRenderObjectWidget {
       ..setExtendLinearGauge = lGauge.extendLinearGauge!
       ..setFillExtend = lGauge.fillExtend
       ..setCurves = lGauge.curves;
+  }
+
+  @override
+  MultiChildRenderObjectElement createElement() =>
+      RenderLinearGaugeElement(this);
+}
+
+/// Linear gauge render widget element class.
+class RenderLinearGaugeElement extends MultiChildRenderObjectElement {
+  /// Creates a instance for Linear gauge render widget element class.
+  RenderLinearGaugeElement(MultiChildRenderObjectWidget widget) : super(widget);
+
+  @override
+  RenderLinearGauge get renderObject => super.renderObject as RenderLinearGauge;
+
+  @override
+  void insertRenderObjectChild(RenderObject child, IndexedSlot<Element?> slot) {
+    super.insertRenderObjectChild(child, slot);
+    if (child is RenderLinearGaugePointer) {
+      renderObject.addWidgetPointer(child);
+    }
   }
 }

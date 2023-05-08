@@ -22,6 +22,23 @@ class _MyValueBarPositionState extends State<MyValueBarPosition> {
             backgroundColor: Colors.grey,
           ),
           valueBar: const [ValueBar(value: 50)],
+          pointers: [
+            Pointer(
+              value: 100,
+              shape: PointerShape.circle,
+              color: Colors.black,
+            ),
+            Pointer(
+              value: 50,
+              // height: 200,
+              shape: PointerShape.childWidget,
+              // child: Container(
+              //   height: 300,
+              //   width: 20,
+              //   color: Colors.red,
+              // ),
+            )
+          ],
           // curves: [CustomCurve(midPoint: 20)],
           rulers: const RulerStyle(
             showPrimaryRulers: false,

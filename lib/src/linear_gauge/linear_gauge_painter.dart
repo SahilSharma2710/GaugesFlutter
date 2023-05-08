@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:geekyants_flutter_gauges/geekyants_flutter_gauges.dart';
 import 'dart:math' as math;
 import 'package:geekyants_flutter_gauges/src/linear_gauge/linear_gauge_label.dart';
+import 'package:geekyants_flutter_gauges/src/linear_gauge/pointers/linear_gauge_shape_pointer_painter.dart';
 
 class RenderLinearGauge extends RenderBox
     with
@@ -55,6 +56,7 @@ class RenderLinearGauge extends RenderBox
         _thickness = thickness,
         _extendLinearGauge = extendLinearGauge,
         _fillExtend = fillExtend,
+        _widgetPointers = <RenderLinearGaugePointer>[],
         _curves = customCurve;
 
   // For getting Gauge Values
@@ -271,17 +273,6 @@ class RenderLinearGauge extends RenderBox
   }
 
   ///
-  /// Getter and Setter for the [valueBarPosition] parameter.
-  ///
-  // ValueBarPosition get valueBarPosition => _valueBarPosition;
-  // ValueBarPosition _valueBarPosition;
-  // set setValueBarPosition(ValueBarPosition val) {
-  //   if (_valueBarPosition == val) return;
-  //   _valueBarPosition = val;
-  //   markNeedsPaint();
-  // }
-
-  ///
   /// Getter and Setter for the [valueBar] parameter.
   ///
   List<ValueBar> get getValueBar => _valueBar;
@@ -344,12 +335,26 @@ class RenderLinearGauge extends RenderBox
     markNeedsPaint();
   }
 
+  /// Adds the widget render object to widget pointer collection.
+  void addWidgetPointer(RenderLinearGaugePointer widgetPointer) {
+    _widgetPointers.add(widgetPointer);
+    markNeedsLayout();
+  }
+
+  /// Adds the widget render object to widget pointer collection.
+  void addShapePointer(RenderLinearGauge widgetPointer) {
+    _shapePointers.add(widgetPointer);
+    markNeedsLayout();
+  }
+
   ///
   /// Getter and Setter for the [_pointerSpace] parameter.
   ///
   double get getPointerSpace => _pointerSpace;
   final double _pointerSpace = 0;
   final LinearGaugeLabel _linearGaugeLabel = LinearGaugeLabel();
+  late List<RenderLinearGaugePointer> _widgetPointers;
+  late List<RenderLinearGaugePointer> _shapePointers;
 
   late Size _axisActualSize;
 
@@ -1130,7 +1135,6 @@ class RenderLinearGauge extends RenderBox
     } else {
       _axisActualSize = Size(widgetThickness, parentWidgetSize);
     }
-
     return constraints.constrain(_axisActualSize);
   }
 
